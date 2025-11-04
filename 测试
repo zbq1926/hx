@@ -1,3 +1,5 @@
+//vless://e555eedd-4cd1-4be2-bdd7-719ef9f49558@baiduyun-bx8.pages.dev:443?encryption=none&security=tls&sni=baiduyun-bx8.pages.dev&fp=randomized&type=ws&host=baiduyun-bx8.pages.dev&path=%2Fpyip%3Dproxyip.jp.cmliussss.net#baiduyun-bx8.pages.dev
+
 const FIXED_UUID = 'e555eedd-4cd1-4be2-bdd7-719ef9f49558';
 import { connect } from "cloudflare:sockets";
 let proxyIP = 'proxyip.jp.cmliussss.net';
