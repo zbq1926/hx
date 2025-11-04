@@ -1,0 +1,425 @@
+const FIXED_UUID = 'e555eedd-4cd1-4be2-bdd7-719ef9f49558';
+import { connect } from "cloudflare:sockets";
+let proxyIP = 'proxyip.jp.cmliussss.net';
+const KEEPALIVE = 15000;
+const STALL_TIMEOUT = 8000;
+const MAX_STALL = 12;
+const MAX_RECONNECT = 24;
+
+export default {
+    async fetch(request) {
+        try {
+            const url = new URL(request.url);
+            proxyIP = proxyIP || `${request.cf?.colo || 'unknown'}.PrOxYp.CmLiuSsSs.nEt`;
+            if (url.searchParams.has('proxyip')) {
+                proxyIP = url.searchParams.get('proxyip') || proxyIP;
+            } else if (url.pathname.toLowerCase().includes('/proxyip=')) {
+                proxyIP = url.pathname.toLowerCase().split('/proxyip=')[1] || proxyIP;
+            } else if (url.pathname.toLowerCase().includes('/proxyip.')) {
+                proxyIP = `proxyip.${url.pathname.toLowerCase().split("/proxyip.")[1] || ''}`;
+            } else if (url.pathname.toLowerCase().includes('/pyip=')) {
+                proxyIP = url.pathname.toLowerCase().split('/pyip=')[1] || proxyIP;
+            } else if (url.pathname.toLowerCase().includes('/ip=')) {
+                proxyIP = url.pathname.toLowerCase().split('/ip=')[1] || proxyIP;
+            }
+            if (request.headers.get('Upgrade') !== 'websocket') {
+                return new Response('Hello World!', { status: 200 });
+            }
+            const webSocketPair = new WebSocketPair();
+            const [client, server] = Object.values(webSocketPair);
+            server.accept();
+            handleConnection(server, request);
+            return new Response(null, {
+                status: 101,
+                webSocket: client
+            });
+        } catch (err) {
+            console.error('Fetch error:', err);
+            return new Response('Server error', { status: 500 });
+        }
+    }
+};
+function buildUUID(arr, start) {
+    return Array.from(arr.slice(start, start + 16))
+        .map(n => n.toString(16).padStart(2, '0'))
+        .join('')
+        .replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+}
+function handleConnection(ws, request) {
+    let socket, writer, reader, info;
+    let isFirstMsg = true;
+    let bytesReceived = 0;
+    let stallCount = 0;
+    let reconnectCount = 0;
+    let lastData = Date.now();
+    const timers = {};
+    const dataBuffer = [];
+    let protocol = null;
+    async function processVLESSHandshake(data) {
+        try {
+            const bytes = new Uint8Array(data);
+            if (bytes.length < 17) {
+                throw new Error('Invalid VLESS header: too short');
+            }
+            ws.send(new Uint8Array([bytes[0], 0]));
+            if (FIXED_UUID && buildUUID(bytes, 1) !== FIXED_UUID) {
+                throw new Error('VLESS auth failed');
+            }
+            const { host, port, payload } = extractAddress(bytes);
+            if (host.includes(atob('c3BlZWQuY2xvdWRmbGFyZS5jb20='))) {
+                throw new Error('Access denied');
+            }
+            let sock;
+            try {
+                sock = connect({ hostname: host, port });
+                await sock.opened;
+            } catch {
+                const [proxyHost, proxyPort] = await parseAddressPort(proxyIP);
+                sock = connect({ hostname: proxyHost, port: proxyPort });
+                await sock.opened;
+            }
+            const w = sock.writable.getWriter();
+            if (payload.length) {
+                await w.write(payload);
+            }
+            return {
+                socket: sock,
+                writer: w,
+                reader: sock.readable.getReader(),
+                info: { host, port }
+            };
+        } catch (err) {
+            throw new Error(`VLESS handshake failed: ${err.message}`);
+        }
+    }
+    async function processTrojanHandshake(data) {
+        try {
+            const bytes = new Uint8Array(data);
+            let crLfIndex = -1;
+            for (let i = 0; i < bytes.length - 1; i++) {
+                if (bytes[i] === 0x0d && bytes[i + 1] === 0x0a) {
+                    crLfIndex = i;
+                    break;
+                }
+            }
+            if (crLfIndex === -1 || crLfIndex < 1) {
+                throw new Error("Invalid Trojan header: CRLF not found");
+            }
+            const password = new TextDecoder().decode(bytes.slice(0, crLfIndex));
+            if (FIXED_UUID && password !== FIXED_UUID) {
+                throw new Error("Trojan auth failed");
+            }
+            let offset = crLfIndex + 2;
+            if (offset + 1 > bytes.length) {
+                throw new Error("Invalid Trojan request: too short");
+            }
+            const cmd = bytes[offset];
+            if (cmd !== 0x01) {
+                throw new Error(`Unsupported Trojan command: ${cmd}`);
+            }
+            offset++;
+            if (offset >= bytes.length) {
+                throw new Error("Invalid Trojan request: missing ATYP");
+            }
+            const atype = bytes[offset];
+            offset++;
+            let address = "";
+            switch (atype) {
+                case 0x01: // IPv4
+                    if (offset + 4 > bytes.length) {
+                        throw new Error("Invalid IPv4 address");
+                    }
+                    address = Array.from(bytes.slice(offset, offset + 4)).join(".");
+                    offset += 4;
+                    break;
+                case 0x03: // 域名
+                    if (offset >= bytes.length) {
+                        throw new Error("Missing domain length");
+                    }
+                    const domainLen = bytes[offset++];
+                    if (offset + domainLen > bytes.length) {
+                        throw new Error("Invalid domain length");
+                    }
+                    address = new TextDecoder().decode(bytes.slice(offset, offset + domainLen));
+                    offset += domainLen;
+                    break;
+                case 0x04: // IPv6
+                    if (offset + 16 > bytes.length) {
+                        throw new Error("Invalid IPv6 address");
+                    }
+                    const ipv6Parts = [];
+                    for (let i = 0; i < 8; i++) {
+                        const part = (bytes[offset + i * 2] << 8) | bytes[offset + i * 2 + 1];
+                        ipv6Parts.push(part.toString(16));
+                    }
+                    address = ipv6Parts.join(":");
+                    offset += 16;
+                    break;
+                default:
+                    throw new Error(`Invalid ATYP: ${atype}`);
+            }
+            if (offset + 2 > bytes.length) {
+                throw new Error("Missing port");
+            }
+            const port = (bytes[offset] << 8) | bytes[offset + 1];
+            offset += 2;
+            let payload = new Uint8Array(0);
+            let secondCrLfIndex = -1;
+            for (let i = offset; i < bytes.length - 1; i++) {
+                if (bytes[i] === 0x0d && bytes[i + 1] === 0x0a) {
+                    secondCrLfIndex = i;
+                    break;
+                }
+            }
+            if (secondCrLfIndex !== -1 && secondCrLfIndex + 2 < bytes.length) {
+                payload = bytes.slice(secondCrLfIndex + 2);
+            } else if (offset < bytes.length) {
+                payload = bytes.slice(offset);
+            }
+            if (address.includes(atob('c3BlZWQuY2xvdWRmbGFyZS5jb20='))) {
+                throw new Error('Access denied');
+            }
+            let sock;
+            try {
+                sock = connect({ hostname: address, port });
+                await sock.opened;
+            } catch {
+                const [proxyHost, proxyPort] = await parseAddressPort(proxyIP);
+                sock = connect({ hostname: proxyHost, port: proxyPort });
+                await sock.opened;
+            }
+            const w = sock.writable.getWriter();
+            if (payload.length > 0) {
+                await w.write(payload);
+            }
+            return {
+                socket: sock,
+                writer: w,
+                reader: sock.readable.getReader(),
+                info: { host: address, port }
+            };
+        } catch (err) {
+            throw new Error(`Trojan handshake failed: ${err.message}`);
+        }
+    }
+    async function readLoop() {
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    console.log('Stream ended gracefully');
+                    await reconnect();
+                    break;
+                }
+                if (value?.length) {
+                    bytesReceived += value.length;
+                    lastData = Date.now();
+                    stallCount = 0;
+                    reconnectCount = 0;
+                    if (ws.readyState === WebSocket.OPEN) {
+                        await ws.send(value);
+                        while (dataBuffer.length && ws.readyState === WebSocket.OPEN) {
+                            await ws.send(dataBuffer.shift());
+                        }
+                    } else {
+                        dataBuffer.push(value);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Read error:', err.message);
+            if (err.message.includes('reset') || err.message.includes('broken')) {
+                console.log('Server closed connection, attempting reconnect');
+                await reconnect();
+            } else {
+                cleanup();
+                ws.close(1006, 'Connection error');
+            }
+        }
+    }
+    async function reconnect() {
+        if (!info || ws.readyState !== WebSocket.OPEN || reconnectCount >= MAX_RECONNECT) {
+            cleanup();
+            ws.close(1011, 'Reconnection failed');
+            return;
+        }
+        reconnectCount++;
+        console.log(`Reconnecting (attempt ${reconnectCount})...`);
+        try {
+            cleanupSocket();
+            await new Promise(resolve => setTimeout(
+                resolve, 
+                Math.min(30000, 30 * Math.pow(2, reconnectCount) + Math.random() * 1000)
+            ));
+            const sock = connect({ hostname: info.host, port: info.port });
+            await sock.opened;
+            socket = sock;
+            writer = sock.writable.getWriter();
+            reader = sock.readable.getReader();
+            lastData = Date.now();
+            stallCount = 0;
+            console.log('Reconnected successfully');
+            while (dataBuffer.length && ws.readyState === WebSocket.OPEN) {
+                await writer.write(dataBuffer.shift());
+            }
+            readLoop();
+        } catch (err) {
+            console.error('Reconnect failed:', err.message);
+            setTimeout(reconnect, 1000);
+        }
+    }
+    function startTimers() {
+        timers.keepalive = setInterval(async () => {
+            if (Date.now() - lastData > KEEPALIVE) {
+                try {
+                    await writer.write(new Uint8Array(0));
+                    lastData = Date.now();
+                } catch (e) {
+                    console.error('Keepalive failed:', e.message);
+                    reconnect();
+                }
+            }
+        }, KEEPALIVE / 3);
+        timers.health = setInterval(() => {
+            if (bytesReceived > 0 && Date.now() - lastData > STALL_TIMEOUT) {
+                stallCount++;
+                console.log(`Stall detected (${stallCount}/${MAX_STALL})`);
+                if (stallCount >= MAX_STALL) {
+                    reconnect();
+                }
+            }
+        }, STALL_TIMEOUT / 2);
+    }
+    function cleanupSocket() {
+        try {
+            writer?.releaseLock();
+            reader?.releaseLock();
+            socket?.close();
+        } catch (err) {
+            console.error('Cleanup error:', err.message);
+        }
+    }
+    function cleanup() {
+        Object.values(timers).forEach(clearInterval);
+        cleanupSocket();
+    }
+    ws.addEventListener('message', async evt => {
+        try {
+            if (isFirstMsg) {
+                isFirstMsg = false;
+                const data = evt.data;
+                const bytes = new Uint8Array(data);
+                let foundCrLf = false;
+                for (let i = 0; i < Math.min(bytes.length - 1, 200); i++) {
+                    if (bytes[i] === 0x0d && bytes[i + 1] === 0x0a) {
+                        foundCrLf = true;
+                        break;
+                    }
+                }
+                if (foundCrLf && bytes.length >= 58) {
+                    protocol = 'trojan';
+                    ({ socket, writer, reader, info } = await processTrojanHandshake(data));
+                } else {
+                    protocol = 'vless';
+                    ({ socket, writer, reader, info } = await processVLESSHandshake(data));
+                }
+                startTimers();
+                readLoop();
+            } else {
+                lastData = Date.now();
+                if (socket && writer && ws.readyState === WebSocket.OPEN) {
+                    await writer.write(evt.data);
+                } else {
+                    dataBuffer.push(evt.data);
+                }
+            }
+        } catch (err) {
+            console.error('Connection error:', err.message);
+            cleanup();
+            ws.close(1006, err.message);
+        }
+    });
+    ws.addEventListener('close', cleanup);
+    ws.addEventListener('error', cleanup);
+}
+function extractAddress(bytes) {
+    try {
+        const offset1 = 18 + bytes[17] + 1;
+        if (offset1 + 2 >= bytes.length) {
+            throw new Error('Invalid address offset');
+        }
+        const port = (bytes[offset1] << 8) | bytes[offset1 + 1];
+        const addrType = bytes[offset1 + 2];
+        let offset2 = offset1 + 3;
+        let host, length;
+        switch (addrType) {
+            case 1: // IPv4
+                length = 4;
+                if (offset2 + length > bytes.length) {
+                    throw new Error('Invalid IPv4 address');
+                }
+                host = bytes.slice(offset2, offset2 + length).join('.');
+                break;
+            case 2: // 域名
+                if (offset2 >= bytes.length) {
+                    throw new Error('Missing domain length');
+                }
+                length = bytes[offset2++];
+                if (offset2 + length > bytes.length) {
+                    throw new Error('Invalid domain length');
+                }
+                host = new TextDecoder().decode(bytes.slice(offset2, offset2 + length));
+                break;
+            case 3: // IPv6
+                length = 16;
+                if (offset2 + length > bytes.length) {
+                    throw new Error('Invalid IPv6 address');
+                }
+                host = `[${Array.from({ length: 8 }, (_, i) =>
+                    ((bytes[offset2 + i * 2] << 8) | bytes[offset2 + i * 2 + 1]).toString(16)
+                ).join(':')}]`;
+                break;
+            default:
+                throw new Error(`Invalid address type: ${addrType}`);
+        }
+        return {
+            host,
+            port,
+            payload: bytes.slice(offset2 + length)
+        };
+    } catch (err) {
+        throw new Error(`Address extraction failed: ${err.message}`);
+    }
+}
+async function parseAddressPort(proxyIP) {
+    try {
+        if (!proxyIP) {
+            throw new Error('Proxy IP is empty');
+        }
+        let host = proxyIP.toLowerCase();
+        let port = 443;
+        if (host.includes('.tp')) {
+            const tpMatch = host.match(/\.tp(\d+)/);
+            if (tpMatch) {
+                port = parseInt(tpMatch[1], 10) || port;
+            }
+            return [host, port];
+        }
+        if (host.includes(']:')) {
+            const parts = host.split(']:');
+            host = parts[0] + ']';
+            port = parseInt(parts[1], 10) || port;
+        }
+        else if (host.includes(':') && !host.startsWith('[')) {
+            const colonIndex = host.lastIndexOf(':');
+            host = host.slice(0, colonIndex);
+            port = parseInt(host.slice(colonIndex + 1), 10) || port;
+        }
+        if (isNaN(port) || port < 1 || port > 65535) {
+            throw new Error(`Invalid port: ${port}`);
+        }
+        return [host, port];
+    } catch (err) {
+        throw new Error(`Address parsing failed: ${err.message}`);
+    }
+}
