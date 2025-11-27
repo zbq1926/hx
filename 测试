@@ -1,0 +1,929 @@
+//////////////////////////////////////////////////////////////////////////配置区块////////////////////////////////////////////////////////////////////////
+let 哎呀呀这是我的ID啊 = "8705800f-adf3-4cf0-91a1-3b6ab77c9466"; //实际上这是你的订阅路径，同时也是副WORKER的验证密码【主副worker需一样】支持任意大小写字母和数字，[域名/ID]进入订阅页面
+let 哎呀呀这是我的VL密钥 = "8705800f-adf3-4cf0-91a1-3b6ab77c9469"; //这是真实的UUID，通用订阅会进行验证，建议修改为自己的规范化UUID
+
+let 私钥开关 = true //是否启用私钥功能，true启用，false不启用，因为私钥功能只支持clash，如果打算使用通用订阅则需关闭私钥功能
+let 咦这是我的私钥哎 = ""; //这是你的私钥，提高隐秘性安全性，就算别人扫到你的域名也无法链接，再也不怕别人薅请求数了^_^
+
+let 隐藏订阅 = false //选择是否隐藏订阅页面，false不隐藏，true隐藏，当然隐藏后自己也无法订阅，因为配置固定，适合自己订阅后就隐藏，防止被爬订阅，并且可以到下方添加嘲讽语^_^
+let 嘲讽语 = "哎呀你找到了我，但是我就是不给你看，气不气，嘿嘿嘿" //隐藏订阅后，真实的订阅页面就会显示这段话，想写啥写啥
+
+let 我的优选 = [
+  //'www.visa.com',
+] //格式127.0.0.1:443#US@notls或[2606:4700:3030:0:4563:5696:a36f:cdc5]:2096#US，如果#US不填则使用统一名称，如果@notls不填则默认使用TLS，每行一个，如果不填任何节点会生成一个默认自身域名的小黄云节点
+let 我的优选TXT ='' //优选TXT路径[https://ip.txt]，表达格式与上述相同，使用TXT时脚本内部填写的节点无效，二选一
+
+let 启用反代功能 = true //选择是否启用反代功能，false，true，现在你可以自由的选择是否启用反代功能了
+let 反代IP = [
+  '',
+] //反代IP或域名，支持多反代，会随机挑选一个发往副worker，反代IP端口一般情况下不用填写，如果你非要用非标反代的话，可以填'ts.hpc.tw:443'这样
+
+let 启用NAT64反代 = false //NAT64如果启用，优先级高于S5反代和原始反代，NAT64只支持ipv4，启用则需禁用doh查询ipv6功能
+let 启用NAT64全局反代 = false //选择是否启用全局NAT64功能，原理带宽与S5类似，受限于NAT64的速度
+let 我的NAT64地址 = [
+  '[2602:fc59:b0:64::]',
+ ] //NAT64地址，支持带端口，示例[2602:fc59:b0:64::]:443
+
+let 启用SOCKS5反代 = false //如果启用此功能，原始反代将失效
+let 启用SOCKS5全局反代 = false //选择是否启用SOCKS5全局反代，启用后所有访问都是S5的落地【无论你客户端选什么节点】，访问路径是客户端--CF--SOCKS5，当然启用此功能后延迟=CF+SOCKS5，带宽取决于SOCKS5的带宽，不再享受CF高速和随时满带宽的待遇
+let 我的SOCKS5账号 = [
+  '12345678:12345678@47.84.45.170:1080',
+] //格式'账号:密码@地址:端口'，支持多SOCKS5，会随机挑选一个发往副worker
+
+let 我的节点名字 = '天书12负载均衡' //自己的节点名字
+
+let 启用DOH查询转换 = true //关闭则是原始模式
+let 优先查询IPV6 = false //启用则优先查询并使用IPV6连接，大多反代可能不支持IPV6，建议关闭此功能
+let 本地严格缓存 = false //新增了脚本本地缓存，如果启用则严格按照TTL时间进行缓存，一般情况下建议不启用，尽量加快访问
+let DOH服务器列表 = [ //DOH地址，基本上已经涵盖市面上所有通用地址了，一般无需修改
+  // 国际通用
+  //"https://1.1.1.1/dns-query",                // Cloudflare IP
+  //"https://cloudflare-dns.com/dns-query",     // Cloudflare 主域名
+  "https://dns.google/resolve",               // Google 公共 DNS
+  "https://dns.adguard.com/resolve",          // AdGuard 去广告 DNS
+
+  // 国际新增推荐
+  "https://dns.nextdns.io/resolve",           // NextDNS
+
+  // 国内兼容
+  "https://dns.alidns.com/resolve",           // 阿里公共 DNS（223.5.5.5）
+  "https://doh.pub/dns-query",                // 腾讯公共 DNS（119.29.29.29）
+];
+
+//////////////////////////////////////////////////////////////////////////数据库配置///////////////////////////////////////////////////////////////////////
+let 启用数据库 = false //会用数据库的可以启用，否则保持关闭别用就好，绑定变量名DB
+let 优先查询数据库 = true //启用则会优先查询数据库，然后才查询doh，关闭则并发数据库与doh同步查询，谁最快返回谁
+let 数据库缓存策略 = 2 //数据库缓存策略，1代表使用TTL缓存【效果好，更新频率高】，2代表固定缓存时间4小时一次【可以减少频繁更新，已经可以适应大部分网站】
+//////////////////////////////////////////////////////////////////////////流控配置////////////////////////////////////////////////////////////////////////
+let 启用新版传输模式 = true //开启则使用队列传输方式，关闭则是原始管道流传输方式
+let 启动控流机制 = false //仅新版传输方式有效，选择是否启动控流机制，true启动，false关闭，使用控流可降低CPU超时的概率，提升连接稳定性，适合轻度使用，日常使用应该绰绰有余
+let 传输控流延迟 = 500; //单位毫秒，每传输2m数据暂停多少毫秒
+//////////////////////////////////////////////////////////////////////////转发配置////////////////////////////////////////////////////////////////////////
+//以下是副worker的地址，不需要绑自定义域，直接使用dev最快，支持多路并发【建议1-3】，请求数会指数级增长【同账号下的情况】，如果不想并发只想负载均衡的话，并发数量设置1就行
+//并发的作用仅限于返回最快握手成功的连接，并不是同时返回数据之类的，副worker部署5-10个以上可以明显改善网络质量
+const 并发数量 = 1;
+const 转发地址 = [
+  'fancy-brook-3cc1.eaganoyer.workers.dev',
+  'curly-leaf-e01b.eaganoyer.workers.dev',
+  'noisy-flower-6dff.esiree11.workers.dev',
+  'crimson-dust-84c9.esiree11.workers.dev',
+  'fancy-mode-d822.ilmer88.workers.dev',
+  'white-truth-32ce.ilmer88.workers.dev',
+];
+//////////////////////////////////////////////////////////////////////////网页入口////////////////////////////////////////////////////////////////////////
+import { connect } from 'cloudflare:sockets';
+export default {
+  async scheduled() {
+    let 读取缓存时间 = DNS缓存记录.get('缓存保活');
+    if (!读取缓存时间) {
+      DNS缓存记录.set('缓存保活', { 缓存时间: Date.now(), 刷新次数: 0 });
+    }
+    let 次数 = 0;
+    const 最大次数 = 30;
+    while (++次数 < 最大次数) {
+      const 等待时间 = Math.floor(Math.random() * 5000) + 20000;
+      await new Promise(resolve => setTimeout(resolve, 等待时间));
+      读取缓存时间 = DNS缓存记录.get('缓存保活');
+      DNS缓存记录.set('缓存保活', { 缓存时间: 读取缓存时间.缓存时间, 刷新次数: ++读取缓存时间.刷新次数 });
+    }
+    读取缓存时间 = DNS缓存记录.get('缓存保活');
+    console.log(`总缓存已保活: ${格式化时间(Date.now() - 读取缓存时间.缓存时间)}，已刷新: ${读取缓存时间.刷新次数} 次`);
+  },
+  async fetch(访问请求, env, ctx) {
+    ctx.waitUntil(后台维持任务()); //脚本保活，免费用户30秒，付费用户15分钟
+    const 读取我的请求标头 = 访问请求.headers.get('Upgrade');
+    const 识别路径 = new URL(访问请求.url);
+    const 读取路径 = 识别路径.pathname + 识别路径.search;
+    if (!读取我的请求标头 || 读取我的请求标头 !== 'websocket') {
+      if (我的优选TXT) {
+        const 读取优选文本 = await fetch(我的优选TXT);
+        const 转换优选文本 = await 读取优选文本.text();
+        const 优选节点 = 转换优选文本.split('\n').map(line => line.trim()).filter(line => line);
+        我的优选 = 优选节点 || 我的优选
+      }
+      switch (识别路径.pathname) {
+        case `/${哎呀呀这是我的ID啊}`: {
+          if (隐藏订阅) {
+            return new Response (`${嘲讽语}`, { status: 200 });
+          } else {
+            const 订阅页面 = 给我订阅页面(哎呀呀这是我的ID啊, 访问请求.headers.get('Host'));
+            return new Response(`${订阅页面}`, {
+              status: 200,
+              headers: { "Content-Type": "text/plain;charset=utf-8" }
+            });
+          }
+        }
+        case `/${哎呀呀这是我的ID啊}/${转码}${转码2}`: {
+          if (隐藏订阅) {
+            return new Response (`${嘲讽语}`, { status: 200 });
+          } else {
+            const 通用配置文件 = 给我通用配置文件(访问请求.headers.get('Host'));
+            return new Response(`${通用配置文件}`, {
+              status: 200,
+              headers: { "Content-Type": "text/plain;charset=utf-8" }
+            });
+          }
+        }
+        case `/${哎呀呀这是我的ID啊}/${小猫}${咪}`: {
+          if (隐藏订阅) {
+            return new Response (`${嘲讽语}`, { status: 200 });
+          } else {
+            const 小猫咪配置文件 = 给我小猫咪配置文件(访问请求.headers.get('Host'));
+            return new Response(`${小猫咪配置文件}`, {
+              status: 200,
+              headers: { "Content-Type": "text/plain;charset=utf-8" }
+            });
+          }
+        }
+        default:
+          const { method, url } = 访问请求;
+          const { pathname } = new URL(url);
+          const 国家 = 访问请求.headers.get('cf-ipcountry') || 'DEFAULT';
+          const 时间字符串 = 获取国家时间字符串(国家);
+          if (method === 'POST' && pathname === '/') {
+            const formData = await 访问请求.formData();
+            const ip = formData.get('ip');
+            const result = await 验证反代IP(ip);
+            return new Response(`${await result.text()} （验证时间: ${国家} ${时间字符串}）`, {
+              headers: {
+                'Content-Type': 'text/plain;charset=UTF-8',
+                'Cache-Control': 'no-store',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+          }    
+          if (method === 'GET' && pathname !== '/' && pathname.length > 1) {
+            const ip = decodeURIComponent(pathname.slice(1));
+            const result = await 验证反代IP(ip);
+            return new Response(`${await result.text()} （验证时间: ${国家} ${时间字符串}）`, {
+              headers: {
+                'Content-Type': 'text/plain;charset=UTF-8',
+                'Cache-Control': 'no-store',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+              }
+            });
+          }
+          return new Response(页面HTML(), {
+            headers: {
+              'Content-Type': 'text/html;charset=UTF-8',
+              'Cache-Control': 'no-store'
+            }
+          });
+      }
+    } else if (读取我的请求标头 === 'websocket'){
+      if (私钥开关) {
+        const 提取私钥 = 读取路径.match(/my-key=([^&]+)/)?.[1]; //读取路径的函数，使用&进行参数分割，有兴趣的可自行扩展功能
+        if (提取私钥 === 咦这是我的私钥哎) {
+          return await 负载均衡(访问请求, env);
+        } else {
+          return new Response('私钥错误，拒绝连接', { status: 400 });
+        }
+      } else {
+        return await 负载均衡(访问请求, env);
+      }
+    }
+  }
+};
+async function 后台维持任务() {
+  while (true) {
+    await new Promise(resolve => setTimeout(resolve, 10000));
+  }
+}
+async function 负载均衡(访问请求, env) {
+  const 读取WS数据头 = 访问请求.headers.get('sec-websocket-protocol'); //读取访问标头中的WS通信数据
+  const 转换二进制数据 = 转换WS数据头为二进制数据(读取WS数据头); //解码目标访问数据
+  try {
+    const { 识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据, 是DNS查询, DNS返回报文 } = await 解析VL标头(转换二进制数据, env); //解析VL数据
+    if (是DNS查询) {
+      const 创建WS接口 = new WebSocketPair();
+      const [客户端, WS接口] = Object.values(创建WS接口);
+      WS接口.accept();
+      WS接口.send(new Uint8Array([0, 0]));
+      WS接口.send(DNS返回报文);
+      return new Response(null, { status: 101, webSocket: 客户端 });
+    }
+    const 请求数组 = await 构建新请求(识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据);
+    const 返回请求数据 = await Promise.any(
+      请求数组.map(async request => {
+        const response = await fetch(request);
+        if (response.status === 101) {
+          return response;
+        } else {
+          throw new Error('状态码不是101');
+        }
+      })
+    );
+    return 返回请求数据;
+  } catch (e) {
+    console.log(`连接握手失败: ${e}`);
+    return new Response(`连接握手失败: ${e}`, { status: 500 });
+  }
+}
+function 转换WS数据头为二进制数据(WS数据头) {
+  let 转换为标准base64 = WS数据头.replace(/-/g, '+').replace(/_/g, '/');
+  转换为标准base64 += '='.repeat((4 - 转换为标准base64.length % 4) % 4);
+  return Uint8Array.from(atob(转换为标准base64), c => c.charCodeAt(0));
+}
+async function 解析VL标头(二进制数据, env) {
+  let 识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据;
+  const 转换二进制数据 = 转换为明文(二进制数据)
+  const 提取端口索引 = 18 + 二进制数据[17] + 1;
+  传输访问端口 = new DataView(二进制数据.buffer, 提取端口索引, 2).getUint16(0);
+  if (传输访问端口 === 53) { //这个处理是应对某些客户端优先强制查询dns的情况，也是通过加密通道udp over tcp的，放心使用
+    //throw new Error ('拒绝DNS连接')
+    const 提取DNS查询报文 = 二进制数据.slice(提取端口索引 + 9);
+    const 查询DOH结果 = await fetch('https://1.1.1.1/dns-query', { //不是所有doh都支持二进制查询，默认的是最快的地址，想更换可以换成"https://dns.google/dns-query"
+      method: 'POST',
+      headers: {
+        'content-type': 'application/dns-message',
+      },
+      body: 提取DNS查询报文
+    })
+    const 提取DOH结果 = await 查询DOH结果.arrayBuffer();
+    const 构建长度头部 = new Uint8Array([(提取DOH结果.byteLength >> 8) & 0xff, 提取DOH结果.byteLength & 0xff]);
+    const 创建DNS返回报文 = await new Blob([构建长度头部, 提取DOH结果, new TextEncoder().encode(生成随机字符串())]).arrayBuffer()
+    return { 识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据, 是DNS查询:true, DNS返回报文:创建DNS返回报文 };
+  }
+  const 提取地址索引 = 提取端口索引 + 2;
+  识别地址类型 = 二进制数据[提取地址索引];
+  let 地址信息索引 = 提取地址索引 + 1;
+  let 地址长度;
+  switch (识别地址类型) {
+    case 1:
+      地址长度 = 4;
+      传输访问地址 = 二进制数据.slice(地址信息索引, 地址信息索引 + 地址长度).join('.');
+      break;
+    case 2:
+      地址长度 = 二进制数据[地址信息索引];
+      地址信息索引 += 1;
+      const 访问域名 = new TextDecoder().decode(二进制数据.slice(地址信息索引, 地址信息索引 + 地址长度));
+      if (启用DOH查询转换) {
+        传输访问地址 = await 查询最快IP(访问域名, env);
+        if (匹配地址(传输访问地址)) 识别地址类型 = 传输访问地址.includes(':') ? 3 : 1;
+      } else {
+        传输访问地址 = 访问域名;
+      }
+      break;
+    case 3:
+      地址长度 = 16;
+      const ipv6 = [];
+      const 读取IPV6地址 = new DataView(二进制数据.buffer, 地址信息索引, 16);
+      for (let i = 0; i < 8; i++) ipv6.push(读取IPV6地址.getUint16(i * 2).toString(16));
+      传输访问地址 = ipv6.join(':');
+      break;
+    default:
+      throw new Error (`无效的访问地址，数据信息: ${转换二进制数据}`);
+  }
+  const 验证VL的密钥 = (a, i = 0) => [...a.slice(i, i + 16)].map(b => b.toString(16).padStart(2, '0')).join('').replace(/(.{8})(.{4})(.{4})(.{4})(.{12})/, '$1-$2-$3-$4-$5');
+  if (!私钥开关 && 验证VL的密钥(二进制数据.slice(1, 17)) !== 哎呀呀这是我的VL密钥) throw new Error('UUID验证失败');
+  const 写入初始数据 = 二进制数据.slice(地址信息索引 + 地址长度);
+  传输初始数据 = btoa(String.fromCharCode(...写入初始数据));
+  return { 识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据, 是DNS查询:false, DNS返回报文:null }
+  function 转换为明文(数据) {
+    const 字节数组 = 数据 instanceof ArrayBuffer ? new Uint8Array(数据) : 数据;
+    return new TextDecoder().decode(字节数组);
+  }
+  function 转换为十六进制(二进制数据) {
+    const 字节数组 = 二进制数据 instanceof ArrayBuffer ? new Uint8Array(二进制数据) : 二进制数据;
+    return Array.from(字节数组)
+      .map(byte => byte.toString(16).padStart(2, '0'))
+      .join('');
+  }
+}
+function 匹配地址(地址) {
+  const 是IPv4 = /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/.test(地址);
+  const 是IPv6 = /^(([0-9a-fA-F]{1,4}:){7}([0-9a-fA-F]{1,4}|:)|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(:[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9])?[0-9]))$/.test(地址);
+  if (是IPv4 || 是IPv6) return true;
+}
+globalThis.DNS缓存记录 = globalThis.DNS缓存记录 ??= new Map();
+async function 查询最快IP(访问域名, env) {
+  /* 手动建表的语句，复制以下字段到对应绑定的D1数据库的控制台中粘贴执行
+  CREATE TABLE IF NOT EXISTS dns_cache (
+    域名 TEXT PRIMARY KEY,
+    IP TEXT NOT NULL,
+    更新时间 INTEGER NOT NULL,
+    TTL INTEGER NOT NULL,
+    TTL更新时间 INTEGER NOT NULL,
+    TTL过期时间 INTEGER NOT NULL
+  )
+  */
+  let 获取dns结果, 获取dnsTTL, DOH结果;
+  const 进程控制器 = [];
+  const 开始查询时间 = Date.now();
+  let 查询DNS缓存记录 = DNS缓存记录.get(访问域名);
+  if (查询DNS缓存记录 && (!本地严格缓存 || 开始查询时间 < 查询DNS缓存记录.TTL过期时间)) {
+    console.log(`${访问域名}已有缓存: ${查询DNS缓存记录.IP}，缓存存在时间: ${格式化时间(开始查询时间 - 查询DNS缓存记录.缓存时间)}, 直接返回结果，查询时间: ${Date.now() - 开始查询时间} 毫秒`);
+    return 查询DNS缓存记录.IP;
+  }
+  if (启用数据库 && 优先查询数据库 && env.DB) {
+    const 查询数据库结果 = await Promise.race([
+      env.DB.prepare(
+        "SELECT IP, 更新时间, TTL, TTL更新时间, TTL过期时间 FROM dns_cache WHERE 域名 = ?"
+      ).bind(访问域名).first(),
+      new Promise(resolve => setTimeout(() => resolve(null), 200))
+    ]);
+    if (查询数据库结果) {
+      DNS缓存记录.set(访问域名, {...查询数据库结果, 缓存时间: Date.now()});
+      if (数据库缓存策略 === 1) {
+        if (开始查询时间 < 查询数据库结果.TTL过期时间) {
+          console.log(`${访问域名}已有数据库: ${查询数据库结果.IP}，直接返回结果，查询时间: ${Date.now() - 开始查询时间} 毫秒`);
+          return 查询数据库结果.IP;
+        } else {
+          console.log(`${访问域名}数据库: ${查询数据库结果.IP} 已过期：${格式化时间(开始查询时间 - 查询数据库结果.TTL过期时间)}，开始更新DOH`);
+        }
+      }
+      if (数据库缓存策略 === 2) {
+        if ((开始查询时间 - 查询数据库结果.TTL更新时间) < 4 * 60 * 60 * 1000) {
+          console.log(`${访问域名}已有数据库: ${查询数据库结果.IP}，直接返回结果，查询时间: ${Date.now() - 开始查询时间} 毫秒`);
+          return 查询数据库结果.IP;
+        } else {
+          console.log(`${访问域名}数据库: ${查询数据库结果.IP} 已过期：${格式化时间(开始查询时间 - 查询数据库结果.TTL过期时间)}，开始更新DOH`);
+        }
+      }
+    }
+  }
+  const 构造所有请求 = (type) => {
+    const 请求列表 = [];
+    if (启用数据库 && !优先查询数据库 && env.DB) {
+      const 查询数据库 = env.DB.prepare(
+        "SELECT IP, 更新时间, TTL, TTL更新时间, TTL过期时间 FROM dns_cache WHERE 域名 = ?"
+      ).bind(访问域名).first()
+        .then(查询数据库 => {
+          if (查询数据库) {
+            DNS缓存记录.set(访问域名, {...查询数据库, 缓存时间: Date.now()});
+            if (数据库缓存策略 === 1) {
+              if (开始查询时间 < 查询数据库.TTL过期时间) {
+                return [查询数据库.IP, null, '数据库'];
+              }
+            }
+            if (数据库缓存策略 === 2) {
+              if ((开始查询时间 - 查询数据库.TTL更新时间) < 4 * 60 * 60 * 1000) {
+                return [查询数据库.IP, null, '数据库'];
+              }
+            }
+          }
+          return Promise.reject('缓存无效');
+        });
+      请求列表.push(查询数据库);
+    }
+    const 构造DOH请求 = (type) => 
+      DOH服务器列表.map(DOH => {
+        const 取消控制器 = new AbortController();
+        进程控制器.push(取消控制器);
+        return fetch(`${DOH}?name=${访问域名}&type=${type}`, {
+          method: 'POST',
+          headers: { 'Accept': 'application/dns-json' },
+          signal: 取消控制器.signal
+        }).then(res => res.json())
+          .then(json => {
+            const 查询结果 = json.Answer?.filter(r => r.type === (type === 'A' ? 1 : 28)).pop();
+            if (查询结果?.data) {
+              return [查询结果.data, 查询结果.TTL ?? 120, DOH];
+            }
+            return Promise.reject(`无 ${type} 记录`);
+          })
+          .catch(err => Promise.reject(`${DOH} ${type} 请求失败: ${err}`));
+      });
+    请求列表.push(...构造DOH请求(type));
+    return 请求列表;
+  };
+  try {
+    if (优先查询IPV6) {
+      try {
+        [获取dns结果, 获取dnsTTL, DOH结果] = await Promise.any(构造所有请求('AAAA'));
+      } catch {
+        [获取dns结果, 获取dnsTTL, DOH结果] = await Promise.any(构造所有请求('A'));
+      }
+    } else {
+      [获取dns结果, 获取dnsTTL, DOH结果] = await Promise.any(构造所有请求('A'));
+    }
+    console.log(`${访问域名}查询结果: ${获取dns结果}，由: ${DOH结果} 查询所得，查询时间: ${Date.now() - 开始查询时间} 毫秒`);
+    return 获取dns结果;
+  } catch {
+    return 访问域名;
+  } finally {
+    if (获取dns结果 && 获取dnsTTL) {
+      try { 进程控制器.forEach(取消控制器 => 取消控制器.abort()) } catch {};
+      const 更新时间 = new Date(开始查询时间 + 8 * 60 * 60 * 1000)
+      .toLocaleString('zh-CN', { hour12: false })
+      .replace(/\//g, '-');
+      const TTL过期时间 = 开始查询时间 + 获取dnsTTL * 1000;
+      DNS缓存记录.set(访问域名, {
+        域名: 访问域名,
+        IP: 获取dns结果,
+        更新时间: 更新时间,
+        TTL: 获取dnsTTL,
+        TTL更新时间: 开始查询时间,
+        TTL过期时间: TTL过期时间,
+        缓存时间: Date.now()
+      });
+      if (启用数据库 && env.DB) {
+        await env.DB.prepare(`
+          INSERT INTO dns_cache (域名, IP, 更新时间, TTL, TTL更新时间, TTL过期时间)
+          VALUES (?, ?, ?, ?, ?, ?)
+          ON CONFLICT(域名) DO UPDATE SET
+            IP = excluded.IP,
+            更新时间 = excluded.更新时间,
+            TTL = excluded.TTL,
+            TTL更新时间 = excluded.TTL更新时间,
+            TTL过期时间 = excluded.TTL过期时间
+          WHERE excluded.更新时间 > dns_cache.更新时间
+        `).bind(
+          访问域名,
+          获取dns结果,
+          更新时间,
+          获取dnsTTL,
+          开始查询时间,
+          TTL过期时间
+        ).run();
+      }
+    }
+  }
+}
+function 格式化时间(毫秒数) {
+  const 总毫秒 = 毫秒数;
+  const 小时 = Math.floor(总毫秒 / (3600 * 1000));
+  const 分钟 = Math.floor((总毫秒 % (3600 * 1000)) / (60 * 1000));
+  const 秒 = Math.floor((总毫秒 % (60 * 1000)) / 1000);
+  const 毫秒 = 总毫秒 % 1000;
+  return `${小时.toString().padStart(2, '0')}:${分钟.toString().padStart(2, '0')}:${秒.toString().padStart(2, '0')}.${毫秒.toString().padStart(3, '0')}`;
+}
+async function 构建新请求(识别地址类型, 传输访问地址, 传输访问端口, 传输初始数据) {
+  const 附加信息 = new Headers();
+  附加信息.set('dizhi', 识别地址类型.toString());
+  附加信息.set('hostname', 传输访问地址);
+  附加信息.set('port', 传输访问端口.toString());
+  附加信息.set('tcphand', 传输初始数据);
+  附加信息.set('proxyip-open', 启用反代功能 ? 'true' : 'false');
+  附加信息.set('nat64-open', 启用NAT64反代 ? 'true' : 'false');
+  附加信息.set('nat64-global', 启用NAT64全局反代 ? 'true' : 'false');
+  附加信息.set('socks5-open', 启用SOCKS5反代 ? 'true' : 'false');
+  附加信息.set('socks5-global', 启用SOCKS5全局反代 ? 'true' : 'false');
+  附加信息.set('safe-key', 哎呀呀这是我的ID啊);
+  附加信息.set('queue', 启用新版传输模式 ? 'true' : 'false');
+  附加信息.set('kongliu-open', 启动控流机制 ? 'true' : 'false');
+  附加信息.set('kongliu-time', 传输控流延迟.toString());
+  // 添加用于升级 101 响应的头信息
+  附加信息.set('Connection', 'Upgrade');  // 说明请求为升级请求
+  附加信息.set('Upgrade', 'websocket');   // 希望服务器升级到 WebSocket
+  const 请求数组 = [];
+  const 已选择的索引 = new Set();
+  const 最大并发数量 = Math.min(并发数量, 转发地址.length);
+  const 随机选择 = (来源) => {
+    const 列表 = Array.isArray(来源) ? 来源 : [来源];
+    return 列表[Math.floor(Math.random() * 列表.length)];
+  };
+  while (请求数组.length < 最大并发数量) {
+    const 随机反代 = 随机选择(反代IP);
+    const 随机NAT64反代 = 随机选择(我的NAT64地址);
+    const 随机SOCKS5反代 = 随机选择(我的SOCKS5账号);
+    const 附加随机信息 = new Headers(附加信息);
+    附加随机信息.set('proxyip', 随机反代);
+    附加随机信息.set('nat64', 随机NAT64反代);
+    附加随机信息.set('socks5', 随机SOCKS5反代);
+    const 随机索引 = Math.floor(Math.random() * 转发地址.length);
+    if (!已选择的索引.has(随机索引)) {
+      const workerUrl = `https://${转发地址[随机索引]}`;
+      const 新请求 = new Request(workerUrl, {
+        headers: 附加随机信息
+      });
+      请求数组.push(新请求);
+      已选择的索引.add(随机索引);
+    }
+  }
+  return 请求数组;
+}
+//////////////////////////////////////////////////////////////////////////默认页面////////////////////////////////////////////////////////////////////////
+let 超时时间 = 5000;
+let 启用网页双重验证 = true;
+function 页面HTML(ip = '', 结果 = '') {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>PROXYIP && SOCKS5 验证工具</title>
+  <style>
+  body {
+    background-color: skyblue;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+  }
+  form {
+    background: white;
+    padding: 2em;
+    border-radius: 1em;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  input[type="text"] {
+    padding: 0.5em;
+    font-size: 1em;
+    width: 400px;
+    margin-bottom: 1em;
+    text-align: center;
+  }
+  button {
+    padding: 0.5em 1em;
+    font-size: 1em;
+    cursor: pointer;
+    width: 200px;
+    text-align: center;
+  }
+  .result {
+    margin-top: 1em;
+    color: black;
+    text-align: center;
+  }
+  .说明 {
+    max-width: 400px;
+    color: white;
+    margin-top: 1.5em;
+    line-height: 1.4;
+    text-align: center;
+    word-wrap: break-word;
+  }
+  </style>
+</head>
+<body>
+<form id="验证表单">
+  <h2 style="margin-bottom: 1em; text-align: center;">PROXYIP && SOCKS5 验证工具</h2>
+  <input type="text" name="ip" placeholder="输入SOCKS5或域名或IP:端口，默认443" value="${ip}" required />
+  <br>
+  <button type="submit">开始验证</button>
+  <div class="result" id="结果显示">${结果}</div>
+</form>
+<div class="说明">
+本工具将尝试连接GPT并判断其是否为有效的反代节点，支持IPV4+IPV6反代和带认证的 SOCKS5 代理，请输入反向代理的地址（例如：127.0.0.1:443 或 user:pass@host:port）
+</div>
+<script>
+document.getElementById('验证表单').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const 表单 = e.target;
+  const ip输入框 = 表单.querySelector('input[name="ip"]');
+  const 结果容器 = document.getElementById('结果显示');
+  结果容器.textContent = '正在验证...';
+  const 表单数据 = new FormData();
+  表单数据.append('ip', ip输入框.value);
+  表单数据.append('nocache', Date.now()); // 防止缓存
+  const 响应 = await fetch('/', {
+    method: 'POST',
+    body: 表单数据
+  });
+  const 内容类型 = 响应.headers.get('Content-Type') || '';
+  const 响应文本 = await 响应.text();
+  if (内容类型.includes('text/html')) {
+    const 解析器 = new DOMParser().parseFromString(响应文本, 'text/html');
+    const 新结果 = 解析器.getElementById('结果显示');
+    if (新结果) {
+      结果容器.textContent = 新结果.textContent;
+    } else {
+      结果容器.textContent = '解析失败';
+    }
+  } else {
+    结果容器.textContent = 响应文本;
+  }
+});
+</script>
+</body>
+</html>`;
+}
+function 获取国家时间字符串(国家代码 = 'DEFAULT') {
+  const 偏移映射 = {
+    'CN': 8,    // 中国
+    'JP': 9,    // 日本
+    'KR': 9,    // 韩国
+    'IN': 5.5,  // 印度
+    'US': -5,   // 美国东部（可自定义更细）
+    'GB': 0,    // 英国
+    'DE': 1,    // 德国
+    'FR': 1,    // 法国
+    'RU': 3,    // 俄罗斯莫斯科
+    'AU': 10,   // 澳大利亚东部
+    'DEFAULT': 8 // 默认使用北京时间（东八区）
+  }
+  const 偏移小时 = 偏移映射[国家代码] ?? 偏移映射['DEFAULT'];
+  const 本地时间 = new Date(Date.now() + 偏移小时 * 60 * 60 * 1000);
+  return 本地时间.toISOString().slice(11, 19); // 返回 HH:MM:SS
+}
+async function 验证反代IP(地址) {
+  let 是SOCKS5地址 = false, SOCKS5账号;
+  let 访问地址 = 'chatgpt.com';
+  let 访问端口 = 443;
+  let TCP接口, 传输数据, 读取数据;
+  let 原始地址 = 地址.trim();
+  // 判断是否为 SOCKS5 代理格式（账号:密码@地址:端口）
+  if (原始地址.includes('@')) {
+    是SOCKS5地址 = true;
+    SOCKS5账号 = 原始地址;
+  }
+  try {
+    let 落地IP = null;
+    if (是SOCKS5地址) {
+      const { 账号, 密码, 地址, 端口 } = await 获取SOCKS5账号(SOCKS5账号);
+      TCP接口 = await connect({ hostname: 地址, port: 端口 });
+      await TCP接口.opened;
+      传输数据 = TCP接口.writable.getWriter();
+      读取数据 = TCP接口.readable.getReader();
+      const 转换数组 = new TextEncoder(); //把文本内容转换为字节数组，如账号，密码，域名，方便与S5建立连接
+      const 构建S5认证 = new Uint8Array([5, 2, 0, 2]); //构建认证信息,支持无认证和用户名/密码认证
+      await 传输数据.write(构建S5认证); //发送认证信息，确认目标是否需要用户名密码认证
+      const 读取认证要求 = (await 读取数据.read()).value;
+      if (读取认证要求[1] === 0x02) { //检查是否需要用户名/密码认证
+        if (!账号 || !密码) {
+          throw new Error('SOCKS5账号密码错误');
+        }
+        const 构建账号密码包 = new Uint8Array([ 1, 账号.length, ...转换数组.encode(账号), 密码.length, ...转换数组.encode(密码) ]); //构建账号密码数据包，把字符转换为字节数组
+        await 传输数据.write(构建账号密码包); //发送账号密码认证信息
+        const 读取账号密码认证结果 = (await 读取数据.read()).value;
+        if (读取账号密码认证结果[0] !== 0x01 || 读取账号密码认证结果[1] !== 0x00) { //检查账号密码认证结果，认证失败则退出
+          throw new Error('SOCKS5账号密码错误');
+        }
+      }
+      let 转换访问地址 = new Uint8Array( [3, 访问地址.length, ...转换数组.encode(访问地址)] );
+      const 构建转换后的访问地址 = new Uint8Array([ 5, 1, 0, ...转换访问地址, 访问端口 >> 8, 访问端口 & 0xff ]); //构建转换好的地址消息
+      await 传输数据.write(构建转换后的访问地址); //发送转换后的地址
+      const 检查返回响应 = (await 读取数据.read()).value;
+      if (检查返回响应[0] !== 0x05 || 检查返回响应[1] !== 0x00) {
+        throw new Error('目标连接超时或不可达');
+      }
+    } else {
+      let 反代IP地址 = 原始地址;
+      let 指定端口 = 443;
+      if (地址.includes(']')) {
+        const 匹配 = 地址.match(/^\[(.+)\](?::(\d+))?$/);
+        if (匹配) {
+          反代IP地址 = 匹配[1];
+          if (匹配[2]) 指定端口 = parseInt(匹配[2]);
+        }
+      } else if (地址.includes(':')) {
+        const 最后冒号 = 地址.lastIndexOf(':');
+        反代IP地址 = 地址.slice(0, 最后冒号);
+        指定端口 = parseInt(地址.slice(最后冒号 + 1)) || 443;
+      }
+      if (启用网页双重验证) {
+        try {
+          TCP接口 = await connect({ hostname: 反代IP地址, port: 80 });
+          await TCP接口.opened;
+        } catch {
+          TCP接口 = await connect({ hostname: 反代IP地址, port: 指定端口 });
+        }
+        const 传输数据 = TCP接口.writable.getWriter();
+        const 读取数据 = TCP接口.readable.getReader();
+        落地IP = await 检查网页结果(传输数据, 读取数据);
+        try { await TCP接口.close?.() } catch (e){ e };
+      }
+      TCP接口 = await connect({ hostname: 反代IP地址, port: 指定端口 });
+      await TCP接口.opened;
+      传输数据 = TCP接口.writable.getWriter();
+      读取数据 = TCP接口.readable.getReader();
+    }
+    let 开始时间 = performance.now();
+    await 传输数据.write(构建GPT握手()); //发送初始握手报文，检查是否返回有效握手回应
+    const 返回数据 = (await 带超时读取(读取数据)).value;
+    console.log(`${原始地址}第1次返回数据长度: ${返回数据.length}`);
+    if (返回数据 && 返回数据[0] === 0x16 && 返回数据.length >= 512 && 返回数据.length <= 3560) { //这里已经设置了3K以下才算有效，可自行研究修改
+      console.log(`${原始地址}有效,GPT响应时间: ${performance.now() - 开始时间}ms,返回数据长度为: ${返回数据.length} 字节`);
+      if (typeof 落地IP === 'string' && 落地IP.trim()) return new Response(`${原始地址},有效,GPT响应时间: ${performance.now() - 开始时间}ms,落地地址为: ${落地IP},返回数据长度为: ${返回数据.length} 字节`);
+      return new Response(`${原始地址},有效,GPT响应时间: ${performance.now() - 开始时间}ms,返回数据长度为: ${返回数据.length} 字节`);
+    }
+    throw new Error('无法访问GPT');
+  } catch (err) {
+    return new Response(`${地址},无效，${err}`);
+  } finally {
+    try { await TCP接口.close?.() } catch {};
+  }
+}
+function 构建GPT握手() {
+  const hexStr =
+    '16030107c3010007bf03030b8b6ac836ddd42f6088af62a097fb6b35b1717c0720e6358eb4206e209c07e220bc55514ff13511d59743ca08f818115628c4bdd9e6d02e7f584e672d73266fcd00205a5a130113021303c02bc02fc02cc030cca9cca8c013c014009c009d002f0035010007566a6a0000000d0012001004030804040105030805050108060601fe0d00da0000010001300020ace25e9b254735ff938129f3ee1290c9431c99ae8d726257abb9e5fb14364d4c00b0dd710dca83b40a925493c18b40b4ed148ec615fd484bcfa4038e6e2b0be63663c08768f4822b50228b538fc52a8e28745753105017894179ef55b925706e7a6838b9cfa1e8ff96301d646db6df6879fe85422f246d0e89828f55a2e708eaa86881b6e3d86ea97e5697fd6750bd4d31d131ccf5873e39a80c71e4e23ddd2ec746b24733690f7c61c9a4ee3f6f25fd5c8628ff58b7e90a3fe0a394a102bc810e55df5ebeab1120a38e364bf911eb6b5e88003304ef04edeaea000100639904c02aef39e7efe4314949ccaa6c6c3856999ceda5dbb0735fa1163ef103a2094c7d0234a38ea2b35fcb1fe6a36a0d8880acc27213a27530d9c2fa5c4d1977411c3bad99169b4568450a10be9bdcbfedaa99914a6d752c0c4a3839ea3ab991e2527f08173452cb7d063bca4abbd63600dc4a21563cc75cf12207187733e14a37b8cfdea0a08b042863c53f349a2c7a16cb5387b4905a6e7e41653d56bd0dd3a47b3109e50651e519b95793a77501354ab6b37f38938c46643ddb93b438809b6b6aa8e1086940b23440c22b147bd8bca01de255d8c40183253578889055a5563da4819be65cb5868bcc575e201263b1787d5829a1430388404b24f477a19d728590e12ba207328e2a7be8246cfab540ba979102caa52e335eda577e02b58a8e8b2b2689852a4a2f538b2b601a208a10aae62c762b1c484c893e57777983084c7793adbf457051a9c52d35a73b9a7dfc5b75902a9e0fe37906b9b41e87371d00710f47bb4d4627ba65a53eb096ada31f6dd4333219925811188510465a080b1dda6c4b924e62f065b35c4af073244a3a8b17383eba7a91e1498dac5829b996c3be797bc5b7cf2339a1707840beea8dbd7c3203267ceac3556544083d380fc0790ab4b994a72b672792c5c4f190f84074f96a25ed5558f234b73b797fb1b5b65a86c24a9c192a61a9eb2b96a255a3d06968cfa529a72173c76877874267bc255b927586e683b1a829032188026c45248d467904874712bb970f2237777b933bd22ed99a2226fb58b66bc04be04b2fd5b7acc140538b75ca36a436c57098a50768d91232d102ee07cd770a8c05975ce13c0ddf478cf836afac37431e775d0ac0728bd6200ca918f5f051d439b94ba219591367c165756c3c6c071457bb7515fad452a7d6878ba2833bd81bdd025d35d159f0c46a0375c0df131569c621baec7e7e0ac3de2b368c9a9e9686750f6baca098043ea2ccc2a2823d603c1977a443c37954c145ca0719b44bc20e79472fb4517e73101250221a1cb800c35620498966dc964be1506c4a260451bdfa36409566b05c010e325b0b88e73150d50fef64b292ea33eeb9284c829c6e41cfbe8944b64c71c498b21d562d71b9bdc9aa936c175f26cac3c6b01a8c299196d7407b70bac6b625e148cf6526cae96877a2940855133e85d5b5642b82f961a54895a392a040d5db3e5992bc81e10743d352bde67c3f710bb4c72b1c68af8194231079af36e240dbfabdd9bc59efe11991526138143535c75b80383626a3725215b6290c87ce162b3454288a0b7b1494653fd0cb2c218d0b5b922904cfb3e531fe57a924b08305e61b95b26a59f0288418546fd852cdf7676bbb32cd9407c9e75359b6abe98750997753fad2694dd3a13751cbfab81f00f956d1c89aab99a853e74dd3e92121f6981b669a42a633a0ca0de00036ea307378d45ed617c11f000756db27edca91fc55bbc26c73ae5214b1a175a3086aeb946600c2abad56afdc5395742282b9d62cff453b9e44930a7cbfa080733aab1e90eb176e321650637d61e3336c85a69818858507cc5e343f519095658bab9d606b18e32fe1167b66f4a55dc84307f9c7f50a3523523192b87784d1279b51560177b4d985c7529b2484670f40cb103b62599dd22db5673e057882ca2bb680c713e6f6b6e13aa12c9b32fe4efc3b0783f6d5bfda9eb032983a377a676e3c27b122fec3af001d00203ef662f1b7740a98f49767ae4f0336e18c7f525ed7844e884f69575200cc84320010000e000c02683208687474702f312e3100230000002d00020101001b000302000200170000446900050003026832000500050100000000ff0100010000000010000e00000b636861746770742e636f6d002b0007060a0a03040303000b0002010000120000000a000c000aeaea6399001d001700187a7a000100002900eb00c600c0b87598373f86380ba4c6d41c888409608c445f9c7c7bc395e80975d6b1b98aecc66651c3941c98680a6b3227dbc778df507fbde2b03f26cc9a6667c68ea9c696782378f99c6ea7650eb52a9d4d479a9ec1fd234edcccf3316836de8425d487ee0395033547d71ac421f1844d9434b93aadfd17bffdfe8b12250f5536a842e99f44f550710fc4a1c13c04d0eb31b221a95234e1f83400d214bc8eb7a8d0a1b0d9d61e3d05c48fd9ba931fa98d05ee24d2145bf8e3af17a9b3f247b12510539d93bdda5f950021202590c04a37239dd481fa07043b69a3069c3a1aef198f98c74c136353390e2da4';
+  return new Uint8Array(hexStr.match(/.{1,2}/g).map(b => parseInt(b, 16)));
+}
+async function 获取SOCKS5账号(SOCKS5) {
+  const 分隔账号 = SOCKS5.includes("@") ? SOCKS5.lastIndexOf("@") : -1;
+  const 账号段 = SOCKS5.slice(0, 分隔账号);
+  const 地址段 = 分隔账号 !== -1 ? SOCKS5.slice(分隔账号 + 1) : SOCKS5;
+  const [账号, 密码] = [账号段.slice(0, 账号段.lastIndexOf(":")), 账号段.slice(账号段.lastIndexOf(":") + 1)];
+  const [地址, 端口] = 解析地址端口(地址段);
+  return { 账号, 密码, 地址, 端口 };
+}
+function 解析地址端口(地址段) {
+  let 地址, 端口;
+  if (地址段.startsWith('[')) {
+    [地址, 端口 = 443] = 地址段.slice(1, -1).split(']:');
+  } else {
+    [地址, 端口 = 443] = 地址段.split(':')
+  }
+  return [地址, 端口];
+}
+function 带超时读取(读取数据) {
+  return Promise.race([
+    读取数据.read(),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('读取超时')), 超时时间)
+    )
+  ]);
+}
+async function 检查网页结果(传输数据, 读取数据) {
+  try {
+    let 响应数据 = new Uint8Array(0);
+    let 检查落地地址;
+    // 构建HTTP GET请求
+    const http请求 =
+      "GET /cdn-cgi/trace HTTP/1.1\r\n" +
+      `Host: speed.cloudflare.com\r\n` +
+      "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36\r\n" +
+      "Connection: close\r\n\r\n";
+    // 发送HTTP请求
+    await 传输数据.write(new TextEncoder().encode(http请求));
+    // 读取HTTP响应
+    while (true) {
+      const { done: 是否结束, value: 数据块 } = await 带超时读取(读取数据);
+      if (是否结束) break;
+      if (数据块) {
+        // 合并数据
+        const 新响应数据 = new Uint8Array(响应数据.length + 数据块.length);
+        新响应数据.set(响应数据);
+        新响应数据.set(数据块, 响应数据.length);
+        响应数据 = 新响应数据;
+        const 响应文本 = new TextDecoder().decode(响应数据);
+        if (响应文本.includes("\r\n\r\n") &&
+            (响应文本.toLowerCase().includes("connection: close") || 响应文本.toLowerCase().includes("content-length"))) {
+          break;
+        }
+      }
+    }
+    // 解析HTTP响应文本
+    const 响应文本 = new TextDecoder().decode(响应数据);
+    console.log("响应文本:\n" + 响应文本);
+    const 状态匹配 = 响应文本.match(/^HTTP\/\d\.\d\s+(\d+)/i);
+    const 状态码 = 状态匹配 ? parseInt(状态匹配[1]) : null;
+    // 判断是否为错误页（优先）
+    if (响应文本.toLowerCase().includes("cf.errors.css") || 响应文本.toLowerCase().includes("error code: 1034")) {
+      throw new Error(`验证Cloudflare失败：返回错误页`);
+    }
+    if (状态码 === 200) {
+      const 是CloudflareHost = /^h=speed\.cloudflare\.com$/m.test(响应文本);
+      检查落地地址 = (响应文本.match(/^ip=((?:\d{1,3}\.){3}\d{1,3}|[a-fA-F0-9:]{2,})$/m) || [])[1] || null;
+      if (!检查落地地址 || !是CloudflareHost) {
+        throw new Error(`验证Cloudflare失败：域名指向错误`);
+      }
+    }
+    // 判断是否为成功响应
+    const 长度足够 = 响应数据.length > 100;
+    const 状态合法 = 状态码 === 200 || 状态码 === 403;
+    const 包含Cloudflare = 响应文本.toLowerCase().includes("cloudflare");
+    const 成功 = 长度足够 && 状态合法 && 包含Cloudflare;
+    if (成功) return 检查落地地址 ?? true;
+    throw new Error(`验证Cloudflare失败`);
+  } catch (e) {
+    throw e;
+  }
+}
+//////////////////////////////////////////////////////////////////////////订阅页面////////////////////////////////////////////////////////////////////////
+let 转码 = 'vl', 转码2 = 'ess', 符号 = '://', 小猫 = 'cla', 咪 = 'sh', 我的私钥;
+if (私钥开关) {
+  我的私钥 = `my-key=${咦这是我的私钥哎}`
+} else {
+  我的私钥 = ""
+}
+function 给我订阅页面(哎呀呀这是我的ID啊, hostName) {
+return `
+1、本worker的私钥功能只支持${小猫}${咪}，仅open${小猫}${咪}和${小猫}${咪} meta测试过，其他${小猫}${咪}类软件自行测试
+2、若使用通用订阅请关闭私钥功能
+3、其他需求自行研究
+通用的：https${符号}${hostName}/${哎呀呀这是我的ID啊}/${转码}${转码2}
+猫咪的：https${符号}${hostName}/${哎呀呀这是我的ID啊}/${小猫}${咪}
+`;
+}
+function 给我通用配置文件(hostName) {
+我的优选.push(`${hostName}:443#备用节点`)
+  return 我的优选.map(获取优选 => {
+    const [主内容,tls] = 获取优选.split("@");
+    const [地址端口, 节点名字 = 我的节点名字] = 主内容.split("#");
+    const 拆分地址端口 = 地址端口.split(":");
+    const 端口 =拆分地址端口.length > 1 ? Number(拆分地址端口.pop()) : 443;
+    const 地址 = 拆分地址端口.join(":");
+    const TLS开关 = tls === 'notls' ? 'security=none' : 'security=tls';
+    return `${转码}${转码2}${符号}${哎呀呀这是我的VL密钥}@${地址}:${端口}?encryption=none&${TLS开关}&sni=${hostName}&type=ws&host=${hostName}&path=${encodeURIComponent('/' + 生成随机字符串() + '?ed=2560&' + 生成随机字符串() + `&${我的私钥}&` + 生成随机字符串())}#${节点名字}`;
+  }).join("\n");
+}
+function 给我小猫咪配置文件(hostName) {
+  我的优选.push(`${hostName}:443#备用节点`)
+  function 生成节点(节点输入列表, hostName) {
+    const 节点配置列表 = [];
+    const 节点名称列表 = [];
+    const 负载均衡节点名称列表 = [];
+    for (const 获取优选 of 节点输入列表) {
+      const [主内容, tls] = 获取优选.split("@");
+      const [地址端口, 节点名字 = 我的节点名字] = 主内容.split("#");
+      const 拆分地址端口 = 地址端口.split(":");
+      const 端口 = 拆分地址端口.length > 1 ? Number(拆分地址端口.pop()) : 443;
+      const 地址 = 拆分地址端口.join(":").replace(/^\[(.+)\]$/, '$1');
+      const TLS开关 = tls === "notls" ? "false" : "true";
+      const 名称 = `${节点名字}-${地址}-${端口}`;
+      节点配置列表.push(`- name: ${名称}
+  type: ${转码}${转码2}
+  server: ${地址}
+  port: ${端口}
+  uuid: ${哎呀呀这是我的VL密钥}
+  udp: false
+  tls: ${TLS开关}
+  sni: ${hostName}
+  network: ws
+  ws-opts:
+    path: "/${生成随机字符串()}&?ed=2560&${生成随机字符串()}&${我的私钥}&${生成随机字符串()}"
+    headers:
+      Host: ${hostName}`);
+    节点名称列表.push(`    - ${名称}`);
+      if (名称.includes("负载均衡")) {
+        负载均衡节点名称列表.push(`    - ${名称}`);
+      }
+    }
+    let 负载均衡配置 = "";
+    let 负载均衡组名 = "负载均衡";
+    if (负载均衡节点名称列表.length > 0) {
+      负载均衡配置 = `- name: ${负载均衡组名}
+  type: load-balance
+  strategy: round-robin #负载均衡配置，round-robin正常轮询，consistent-hashing散列轮询
+  url: http://www.gstatic.com/generate_204
+  interval: 600 #自动测试间隔
+  proxies:
+${负载均衡节点名称列表.join("\n")}`;
+    }
+    return {
+      节点配置列表,
+      节点名称列表,
+      负载均衡配置,
+      负载均衡组名: 负载均衡节点名称列表.length > 0 ? 负载均衡组名 : null,
+    };
+  }  
+  const { 节点配置列表, 节点名称列表, 负载均衡配置, 负载均衡组名 } = 生成节点(我的优选, hostName);
+  const 生成节点配置 = 节点配置列表.join("\n");
+  const 选择组 = `- name: 🚀 节点选择
+  type: select
+  proxies:
+    - 自动选择
+${负载均衡组名 ? `    - ${负载均衡组名}` : ""}
+${节点名称列表.join("\n")}`;
+  const 自动选择组 = `- name: 自动选择
+  type: url-test
+  url: http://www.gstatic.com/generate_204
+  interval: 600 #自动测试间隔
+  tolerance: 30
+  proxies:
+${负载均衡组名 ? `    - ${负载均衡组名}` : ""}
+${节点名称列表.join("\n")}`;
+return `
+proxies:
+${生成节点配置}
+proxy-groups:
+${选择组}
+${自动选择组}
+${负载均衡配置 || ""}
+- name: 漏网之鱼
+  type: select
+  proxies:
+    - DIRECT
+    - 🚀 节点选择
+rules:
+# 本人自用规则，不一定适合所有人所有客户端，如客户端因规则问题无法订阅就删除对应规则吧，每个人都有自己习惯的规则，自行研究哦
+# 策略规则，建议使用meta内核，部分规则需打开${小猫}${咪} mate的使用geoip dat版数据库，比如TG规则就需要，或者自定义geoip的规则订阅
+# 这是geoip的规则订阅链接，https://cdn.jsdelivr.net/gh/Loyalsoldier/geoip@release/Country.mmdb
+# - GEOSITE,category-ads-all,REJECT #简单广告过滤规则，要增加规则数可使用category-ads-all
+- GEOSITE,cn,DIRECT #国内域名直连规则
+- GEOIP,CN,DIRECT,no-resolve #国内IP直连规则
+- GEOSITE,cloudflare,DIRECT #CF域名规则
+- GEOIP,CLOUDFLARE,DIRECT,no-resolve #CFIP规则
+- GEOSITE,gfw,🚀 节点选择 #GFW域名规则
+- GEOSITE,google,🚀 节点选择 #GOOGLE域名规则
+- GEOIP,GOOGLE,🚀 节点选择,no-resolve #GOOGLE IP规则
+- GEOSITE,netflix,🚀 节点选择 #奈飞域名规则
+- GEOIP,NETFLIX,🚀 节点选择,no-resolve #奈飞IP规则
+- GEOSITE,telegram,🚀 节点选择 #TG域名规则
+- GEOIP,TELEGRAM,🚀 节点选择,no-resolve #TG IP规则
+- GEOSITE,openai,🚀 节点选择 #GPT规则
+- MATCH,漏网之鱼
+`
+}
+function 生成随机字符串(最小长度 = 100, 最大长度 = 200) {
+  const 字符集 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const 长度 = 最小长度 + Math.floor(Math.random() * (最大长度 - 最小长度 + 1));
+  const 结果 = [];
+  const 随机字节 = new Uint8Array(长度);
+  crypto.getRandomValues(随机字节);
+  for (let i = 0; i < 长度; i++) {
+    const 随机索引 = 随机字节[i] % 字符集.length;
+    结果.push(字符集[随机索引]);
+  }
+  return 结果.join('');
+}
